@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+        min-height: 100vh;
+        padding: 20px;
+        color: #333;
+      }
+      
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        padding: 40px;
+      }
+      
+      h2 {
+        color: #2c3e50;
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 28px;
+        font-weight: 600;
+      }
+      
+      .info-section {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 25px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+        border-left: 4px solid #74b9ff;
+      }
+      
+      .info-section p {
+        margin-bottom: 10px;
+        font-size: 16px;
+        color: #34495e;
+      }
+      
+      .info-section strong {
+        color: #2c3e50;
+      }
+      
+      .day-card {
+        background: white;
+        border: 2px solid #e1e8ed;
+        border-radius: 12px;
+        padding: 25px;
+        margin: 20px 0;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      }
+      
+      .day-card:hover {
+        border-color: #74b9ff;
+        box-shadow: 0 10px 25px rgba(116, 185, 255, 0.15);
+        transform: translateY(-2px);
+      }
+      
+      .day-card h4 {
+        color: #2c3e50;
+        margin-bottom: 20px;
+        font-size: 18px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+      }
+      
+      .day-card h4::before {
+        content: "📅";
+        margin-right: 10px;
+        font-size: 20px;
+      }
+      
+      .form-row {
+        margin-bottom: 15px;
+      }
+      
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #34495e;
+        font-size: 14px;
+      }
+      
+      input[type="date"], input[type="time"] {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e1e8ed;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+      }
+      
+      input[type="date"]:focus, input[type="time"]:focus {
+        outline: none;
+        border-color: #74b9ff;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(116, 185, 255, 0.1);
+      }
+      
+      .btn {
+        background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 20px;
+      }
+      
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(116, 185, 255, 0.3);
+      }
+      
+      .btn:active {
+        transform: translateY(0);
+      }
+      
+      .success-message {
+        text-align: center;
+        padding: 40px;
+        background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+        color: white;
+        border-radius: 15px;
+        margin-top: 20px;
+      }
+      
+      .success-message h3 {
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+      
+      .success-message p {
+        font-size: 18px;
+        opacity: 0.9;
+      }
+      
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #74b9ff;
+        font-size: 18px;
+      }
+    </style>
+    <script>
+      // 1) This is injected by Code.gs → tpl.meetingId = id
+      const meetingId = <?= JSON.stringify(meetingId) ?>;
+      console.log('Injected meetingId:', meetingId);
+
+      window.onload = function() {
+        const info = document.getElementById('info');
+
+        if (!meetingId) {
+          info.innerText = 'Error: no course ID provided to the page.';
+          return;
+        }
+
+        // 2) Fetch the meeting row, with both success & failure handlers
+        google.script.run
+          .withSuccessHandler(populateForm)
+          .withFailureHandler(err => {
+            console.error('getMeeting failed:', err);
+            info.innerHTML = '<div class="loading">❌ Error loading course: ' + err.message + '</div>';
+          })
+          .getMeeting(meetingId);
+      };
+
+      // 3) On success, render the date‐radio buttons
+      function populateForm(m) {
+        console.log('populateForm got:', m);
+        console.log('Month value:', m.dateOptions, 'type:', typeof m.dateOptions);
+        const info      = document.getElementById('info');
+        const datesDiv  = document.getElementById('dateOptions');
+
+        // Show the selected month
+        const month = m.dateOptions
+        console.log('Using month:', month);
+
+        info.innerHTML = `
+          <div class="info-section">
+            <p><strong>👨‍🏫 Teacher:</strong> ${m.teacherName}</p>
+            <p><strong>🏫 Course:</strong> ${m.course}</p>
+            <p><strong>🏢 Location:</strong> ${m.location}</p>
+            <p><strong>📅 Course Month:</strong> ${month}</p>
+            <p><strong>⏰ Instructions:</strong> Pick at most 3 different days in this month and propose possible times for each day</p>
+          </div>
+        `;
+        datesDiv.innerHTML = '';
+
+        // Add 3 date pickers limited to the selected month
+        const minDate = month + '-01';
+        const maxDate = month + '-' + new Date(Number(month.split('-')[0]), Number(month.split('-')[1]), 0).getDate().toString().padStart(2, '0');
+        console.log('Date range:', minDate, 'to', maxDate);
+        
+        for (let i = 1; i <= 3; i++) {
+          datesDiv.innerHTML += `
+            <div class="day-card">
+              <h4>Day ${i}</h4>
+              <div class="form-row">
+                <label>📅 Date:</label>
+                <input type="date" id="teacher-day${i}" min="${minDate}" max="${maxDate}">
+              </div>
+              <div class="form-row">
+                <label>⏰ Time 1:</label>
+                <input type="time" id="time${i}-1">
+              </div>
+              <div class="form-row">
+                <label>⏰ Time 2:</label>
+                <input type="time" id="time${i}-2">
+              </div>
+              <div class="form-row">
+                <label>⏰ Time 3:</label>
+                <input type="time" id="time${i}-3">
+              </div>
+            </div>            
+          `;
+        }
+      }
+
+      function submitTimes() {
+        // Collect all 3 days and their times
+        const days = [];
+        const allTimes = [];
+
+        for (let i = 1; i <= 3; i++) {
+          const day = document.getElementById(`teacher-day${i}`).value;
+          if (day) {
+            days.push(day);
+
+            // Collect times for this day
+            const dayTimes = [];
+            for (let j = 1; j <= 3; j++) {
+              const time = document.getElementById(`time${i}-${j}`).value;
+              if (time) {
+                dayTimes.push(time);
+              }
+            }
+            allTimes.push(dayTimes)
+          }
+        }
+        
+        if (days.length === 0 ) {
+          return alert(`Please pick at least one day.`)
+        }
+
+        // Check if each day has at least one time
+        for (let i = 0; i < allTimes.length; i++) {
+          if (allTimes[i].length ===0) {
+            return alert(`Please enter at least one time for ${days[i]}.`)
+          }
+        }
+
+        google.script.run
+          .withSuccessHandler(() => {
+            document.body.innerHTML = `
+              <div class="container">
+                <div class="success-message">
+                  <h3>✅ Thanks!</h3>
+                  <p>Your proposed days and times have been sent to the student.</p>
+                </div>
+              </div>
+            `;
+          })
+          .withFailureHandler(err => {
+            alert('Error submitting times: ' + err.message);
+          })
+          .submitTeacherOptions({
+            id: meetingId,
+            days: days,
+            allTimes: allTimes
+          });
+      }
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <h2>⏰ Propose Meeting Times</h2>
+
+      <!--
+        This "Loading…" text will be replaced either by populateForm()
+        or by our failure handler above.
+      -->
+      <div id="info" class="loading">⏳ Loading…</div>
+
+      <!-- Date radio‐buttons go here -->
+      <div id="dateOptions"></div>
+
+      <button class="btn" onclick="submitTimes()">🚀 Submit Times</button>
+    </div>
+  </body>
+</html>
+

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <script>
+      // This value is injected at render-time by doGet
+      const rawId = <?= JSON.stringify(rawId) ?>;
+      console.log('Injected rawId:', rawId);
+      document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('out').textContent = rawId
+          ? `Server saw ID = ${rawId}`
+          : 'No ID was passed to the server!';
+      });
+    </script>
+  </head>
+  <body>
+    <h2>Echo Test</h2>
+    <div id="out">Loading…</div>
+  </body>
+</html>
+

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <script>
+      function sendTest() {
+        document.getElementById('status').innerText = 'Sending…';
+        google.script
+          .run
+          .withSuccessHandler(msg => {
+            document.getElementById('status').innerText = msg;
+          })
+          .withFailureHandler(err => {
+            document.getElementById('status').innerText = 
+              'Error: ' + err.message;
+          })
+          .testMail();
+      }
+    </script>
+  </head>
+  <body>
+    <h2>MailApp.sendEmail Tester</h2>
+    <button onclick="sendTest()">Send a Test Email</button>
+    <div id="status" style="margin-top:1em;color:green;"></div>
+  </body>
+</html>
+

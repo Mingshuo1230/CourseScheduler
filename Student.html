@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      padding: 40px;
+    }
+    
+    h2 {
+      color: #2c3e50;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    
+    .info-section {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      padding: 25px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      border-left: 4px solid #a29bfe;
+    }
+    
+    .info-section p {
+      margin-bottom: 10px;
+      font-size: 16px;
+      color: #34495e;
+    }
+    
+    .info-section strong {
+      color: #2c3e50;
+    }
+    
+    .day-card {
+      background: white;
+      border: 2px solid #e1e8ed;
+      border-radius: 12px;
+      padding: 25px;
+      margin: 20px 0;
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    
+    .day-card:hover {
+      border-color: #a29bfe;
+      box-shadow: 0 10px 25px rgba(162, 155, 254, 0.15);
+      transform: translateY(-2px);
+    }
+    
+    .day-card h4 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+    }
+    
+    .day-card h4::before {
+      content: "📅";
+      margin-right: 10px;
+      font-size: 20px;
+    }
+    
+    .time-option {
+      margin: 10px 0;
+      padding: 12px 15px;
+      border: 2px solid #e1e8ed;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+    
+    .time-option:hover {
+      border-color: #a29bfe;
+      background: #f8f9fa;
+    }
+    
+    .time-option input[type="radio"] {
+      margin-right: 12px;
+      transform: scale(1.2);
+    }
+    
+    .time-option input[type="radio"]:checked + span {
+      color: #a29bfe;
+      font-weight: 600;
+    }
+    
+    .btn {
+      background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 100%;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 20px;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(162, 155, 254, 0.3);
+    }
+    
+    .btn:active {
+      transform: translateY(0);
+    }
+    
+    .success-message {
+      text-align: center;
+      padding: 40px;
+      background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+      color: white;
+      border-radius: 15px;
+      margin-top: 20px;
+    }
+    
+    .success-message h3 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    
+    .success-message p {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #a29bfe;
+      font-size: 18px;
+    }
+    
+    .error-message {
+      background: linear-gradient(135deg, #ff7675 0%, #d63031 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      margin: 20px 0;
+    }
+  </style>
+  <script>
+    // Injected by doGet → tpl.meetingId
+    const meetingId = <?= JSON.stringify(meetingId) ?>;
+    console.log('>>> student sees meetingId =', meetingId);
+
+    window.onload = () => {
+      const infoDiv  = document.getElementById('info');
+      const timesDiv = document.getElementById('times');
+      if (!meetingId) {
+        infoDiv.innerHTML = '<div class="error-message">❌ Error: no course ID provided.</div>';
+        return;
+      }
+      google.script.run
+       .withSuccessHandler(meeting => {
+         console.log('getCourse returned:', meeting);
+         if (!meeting) {
+           infoDiv.innerHTML = '<div class="error-message">❌ Error: no data returned for meeting.</div>';
+           return;
+         }
+         populateForm(meeting);
+       })
+       .withFailureHandler(err => {
+         console.error('getCourse failed:', err);
+         infoDiv.innerHTML = '<div class="error-message">❌ Error loading course: ' + err.message + '</div>';
+       })
+       .getMeeting(meetingId);
+    };
+
+    function populateForm(m) {
+      console.log('populateForm got:', m);
+      const info = document.getElementById('info');
+      const timesDiv = document.getElementById('times');
+      
+      if (!m) {
+        info.innerHTML = '<div class="error-message">❌ Course not found or already completed.</div>';
+        return;
+      }
+      
+      info.innerHTML = `
+        <div class="info-section">
+          <p><strong>🏫 Course:</strong> ${m.course}</p>
+          <p><strong>🏢 Location:</strong> ${m.location}</p>
+          <p><strong>👨‍🏫 Teacher:</strong> ${m.teacherName}</p>
+          <p><strong>⏰ Instructions:</strong> Choose one of these days and times</p>
+        </div>
+      `;
+      timesDiv.innerHTML = '';
+      
+      // Show each day with its times
+      const days = m.dateSelected || [];
+      const dayTimes = [m.day1Times || [], m.day2Times || [], m.day3Times || []];
+      
+      if (days.length === 0) {
+        timesDiv.innerHTML = '<div class="error-message">⏳ No days have been proposed yet. Please wait for the teacher to propose days and times.</div>';
+        return;
+      }
+      
+      days.forEach((day, dayIndex) => {
+        const times = dayTimes[dayIndex] || [];
+        if (times.length > 0) {
+          const dayDiv = document.createElement('div');
+          dayDiv.className = 'day-card';
+          
+          dayDiv.innerHTML = `<h4>${day}</h4>`;
+          
+          times.forEach(time => {
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'time-option';
+            
+            const rb = document.createElement('input');
+            rb.type = 'radio';
+            rb.name = 'slot';
+            rb.value = `${day}|${time}`; // Store both day and time
+            
+            const timeSpan = document.createElement('span');
+            timeSpan.textContent = `⏰ ${time}`;
+            
+            timeDiv.appendChild(rb);
+            timeDiv.appendChild(timeSpan);
+            dayDiv.appendChild(timeDiv);
+          });
+          
+          timesDiv.appendChild(dayDiv);
+        }
+      });
+    }
+
+    function submitChoice() {
+      const sel = document.querySelector('input[name=slot]:checked');
+      if (!sel) return alert('Please pick a day and time.');
+      
+      // Parse the selected value (format: "day|time")
+      const [selectedDay, selectedTime] = sel.value.split('|');
+      
+      google.script.run
+        .withSuccessHandler(() => {
+          document.body.innerHTML = `
+            <div class="container">
+              <div class="success-message">
+                <h3>✅ Confirmed!</h3>
+                <p>Your course is fixed for <strong>${selectedDay} at ${selectedTime}</strong></p>
+              </div>
+            </div>
+          `;
+        })
+        .withFailureHandler(err => {
+          alert('Error confirming time: ' + err.message);
+        })
+        .submitStudentConfirmation({
+          id:        meetingId,
+          finalTime: selectedDay + ' at ' + selectedTime
+        });
+    }
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h2>⏰ Select Your Final Time</h2>
+    <div id="info" class="loading">⏳ Loading…</div>
+    <div id="times"></div>
+    <button class="btn" onclick="submitChoice()">✅ Confirm</button>
+  </div>
+</body>
+</html>
