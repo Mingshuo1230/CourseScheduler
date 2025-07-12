@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        color: #333;
+      }
+      
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        padding: 40px;
+      }
+      
+      h2 {
+        color: #2c3e50;
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 28px;
+        font-weight: 600;
+      }
+      
+      .form-group {
+        margin-bottom: 25px;
+      }
+      
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #34495e;
+        font-size: 14px;
+      }
+      
+      select, input[type="month"] {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e1e8ed;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+      }
+      
+      select:focus, input[type="month"]:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+      
+      .divider {
+        height: 1px;
+        background: linear-gradient(to right, transparent, #e1e8ed, transparent);
+        margin: 30px 0;
+      }
+      
+      .btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+      }
+      
+      .btn:active {
+        transform: translateY(0);
+      }
+      
+      .success-message {
+        text-align: center;
+        padding: 30px;
+        background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        color: white;
+        border-radius: 10px;
+        margin-top: 20px;
+      }
+      
+      .success-message h3 {
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+      
+      .success-message p {
+        font-size: 18px;
+        opacity: 0.9;
+      }
+      
+      .nav-links {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      
+      .nav-links a {
+        display: inline-block;
+        margin: 0 10px;
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+      
+      .nav-links a:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+      }
+    </style>
+    <script>
+      function onLoad() {
+        google.script
+          .run
+          .withSuccessHandler(populate)
+          .getAdminData();
+      }
+
+      function populate(cfg) {
+        // teacher
+        const t = document.getElementById('teacher');
+        cfg.teachers.forEach(u=>{
+          const o = document.createElement('option');
+          o.value = u.email; o.text = u.name;
+          t.appendChild(o);
+        });
+      }
+
+      function sendTeacherAvailability() {
+        const tEl = document.getElementById('teacher');
+        const teacherName  = tEl.selectedOptions[0]?.text;
+        const teacherEmail = tEl.value;
+        const month = document.getElementById('admin-month').value;
+
+        if (!teacherEmail || !month) {
+          return alert('Pick teacher and a month.');
+        }
+
+        google.script
+          .run
+          .withSuccessHandler(id=>{
+            document.body.innerHTML = `
+              <div class="container">
+                <div class="success-message">
+                  <h3>✅ Teacher Availability Link Sent!</h3>
+                  <p>Teacher: <strong>${teacherName}</strong></p>
+                  <p>Month: <strong>${month}</strong></p>
+                  <p>Availability ID: <strong>${id}</strong></p>
+                </div>
+              </div>
+            `;
+          })
+          .scheduleTeacherAvailability({
+            teacherName, teacherEmail, month
+          });
+      }
+    </script>
+  </head>
+  <body onload="onLoad()">
+    <div class="container">
+      <h2>👨‍🏫 Teacher Availability Setup</h2>
+      
+      <div class="nav-links">
+        <a href="?mode=adminTeacher">Teacher Availability</a>
+        <a href="?mode=adminStudent">Student Course Booking</a>
+      </div>
+
+      <div class="form-group">
+        <label>👨‍🏫 Teacher:</label>
+        <select id="teacher">
+          <option value="">-- Choose a teacher --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>📆 Month for Availability:</label>
+        <input type="month" id="admin-month">
+      </div>
+
+      <button class="btn" onclick="sendTeacherAvailability()">📧 Send Availability Link</button>
+    </div>
+  </body>
+</html> 

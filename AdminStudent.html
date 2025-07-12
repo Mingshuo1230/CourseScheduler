@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        color: #333;
+      }
+      
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        padding: 40px;
+      }
+      
+      h2 {
+        color: #2c3e50;
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 28px;
+        font-weight: 600;
+      }
+      
+      .form-group {
+        margin-bottom: 25px;
+      }
+      
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #34495e;
+        font-size: 14px;
+      }
+      
+      select, input[type="number"], input[type="month"] {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e1e8ed;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+      }
+      
+      select:focus, input[type="number"]:focus, input[type="month"]:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+      
+      .divider {
+        height: 1px;
+        background: linear-gradient(to right, transparent, #e1e8ed, transparent);
+        margin: 30px 0;
+      }
+      
+      .btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+      }
+      
+      .btn:active {
+        transform: translateY(0);
+      }
+      
+      .success-message {
+        text-align: center;
+        padding: 30px;
+        background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        color: white;
+        border-radius: 10px;
+        margin-top: 20px;
+      }
+      
+      .success-message h3 {
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+      
+      .success-message p {
+        font-size: 18px;
+        opacity: 0.9;
+      }
+      
+      .nav-links {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      
+      .nav-links a {
+        display: inline-block;
+        margin: 0 10px;
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+      
+      .nav-links a:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+      }
+    </style>
+    <script>
+      function onLoad() {
+        google.script
+          .run
+          .withSuccessHandler(populate)
+          .getAdminData();
+      }
+
+      function populate(cfg) {
+        // student
+        const s = document.getElementById('student');
+        cfg.students.forEach(u=>{
+          const o = document.createElement('option');
+          o.value = u.email; o.text = u.name;
+          s.appendChild(o);
+        });
+        // teacher
+        const t = document.getElementById('teacher');
+        cfg.teachers.forEach(u=>{
+          const o = document.createElement('option');
+          o.value = u.email; o.text = u.name;
+          t.appendChild(o);
+        });
+        // course
+        const c = document.getElementById('course');
+        cfg.courses.forEach(u=>{
+          const o = document.createElement('option');
+          o.text = u.name;
+          c.appendChild(o);
+        });
+        // location
+        const l = document.getElementById('location');
+        cfg.locations.forEach(u=>{
+          const o = document.createElement('option');
+          o.text = u.name;
+          l.appendChild(o);
+        });
+      }
+
+      function scheduleStudentCourse() {
+        const sEl = document.getElementById('student');
+        const tEl = document.getElementById('teacher');
+        const studentName  = sEl.selectedOptions[0]?.text;
+        const studentEmail = sEl.value;
+        const teacherName  = tEl.selectedOptions[0]?.text;
+        const teacherEmail = tEl.value;
+        const month = document.getElementById('admin-month').value;
+        const course = document.getElementById('course').value;
+        const location = document.getElementById('location').value;
+        const maxSlots = document.getElementById('max-slots').value;
+
+        if (!studentEmail || !teacherEmail || !month || !course || !location || !maxSlots) {
+          return alert('Please fill in all fields.');
+        }
+
+        google.script
+          .run
+          .withSuccessHandler(id=>{
+            document.body.innerHTML = `
+              <div class="container">
+                <div class="success-message">
+                  <h3>✅ Student Course Link Sent!</h3>
+                  <p>Student: <strong>${studentName}</strong></p>
+                  <p>Teacher: <strong>${teacherName}</strong></p>
+                  <p>Course: <strong>${course}</strong></p>
+                  <p>Location: <strong>${location}</strong></p>
+                  <p>Month: <strong>${month}</strong></p>
+                  <p>Max Slots: <strong>${maxSlots}</strong></p>
+                  <p>Course ID: <strong>${id}</strong></p>
+                </div>
+              </div>
+            `;
+          })
+          .scheduleStudentCourse({
+            course, location,
+            studentName, studentEmail,
+            teacherName, teacherEmail,
+            month, maxSlots
+          });
+      }
+    </script>
+  </head>
+  <body onload="onLoad()">
+    <div class="container">
+      <h2>👤 Student Course Booking</h2>
+      
+      <div class="nav-links">
+        <a href="?mode=adminTeacher">Teacher Availability</a>
+        <a href="?mode=adminStudent">Student Course Booking</a>
+      </div>
+
+      <div class="form-group">
+        <label>👤 Student:</label>
+        <select id="student">
+          <option value="">-- Choose a student --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>👨‍🏫 Teacher:</label>
+        <select id="teacher">
+          <option value="">-- Choose a teacher --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>🏫 Course:</label>
+        <select id="course">
+          <option value="">-- Choose a course --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>🏢 Location:</label>
+        <select id="location">
+          <option value="">-- Choose a location --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>📆 Course Month:</label>
+        <input type="month" id="admin-month">
+      </div>
+
+      <div class="form-group">
+        <label>⏰ Maximum Time Slots Student Can Choose:</label>
+        <input type="number" id="max-slots" min="1" max="10" value="3" placeholder="Enter number of slots">
+      </div>
+
+      <button class="btn" onclick="scheduleStudentCourse()">📧 Send Course Booking Link</button>
+    </div>
+  </body>
+</html> 

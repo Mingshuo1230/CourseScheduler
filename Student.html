@@ -212,74 +212,155 @@
           <p><strong>🏫 Course:</strong> ${m.course}</p>
           <p><strong>🏢 Location:</strong> ${m.location}</p>
           <p><strong>👨‍🏫 Teacher:</strong> ${m.teacherName}</p>
-          <p><strong>⏰ Instructions:</strong> Choose one of these days and times</p>
+          <p><strong>📅 Month:</strong> ${m.dateOptions}</p>
+          <p><strong>⏰ Instructions:</strong> Choose up to ${m.maxSlots} time slots from the available times</p>
         </div>
       `;
       timesDiv.innerHTML = '';
       
-      // Show each day with its times
-      const days = m.dateSelected || [];
-      const dayTimes = [m.day1Times || [], m.day2Times || [], m.day3Times || []];
+      // Get teacher availability for this month
+      google.script.run
+        .withSuccessHandler(availabilityData => {
+          displayAvailableTimes(availabilityData, m.maxSlots);
+        })
+        .withFailureHandler(err => {
+          console.error('Failed to get teacher availability:', err);
+          timesDiv.innerHTML = '<div class="error-message">❌ Error loading teacher availability. Please contact the administrator.</div>';
+        })
+        .getTeacherAvailabilityForMonth(m.teacherEmail, m.dateOptions);
+    }
+
+    function displayAvailableTimes(availabilityData, maxSlots) {
+      const timesDiv = document.getElementById('times');
       
-      if (days.length === 0) {
-        timesDiv.innerHTML = '<div class="error-message">⏳ No days have been proposed yet. Please wait for the teacher to propose days and times.</div>';
+      if (!availabilityData || Object.keys(availabilityData).length === 0) {
+        timesDiv.innerHTML = '<div class="error-message">⏳ No availability data found for this teacher and month.</div>';
         return;
       }
       
-      days.forEach((day, dayIndex) => {
-        const times = dayTimes[dayIndex] || [];
-        if (times.length > 0) {
-          const dayDiv = document.createElement('div');
-          dayDiv.className = 'day-card';
-          
-          dayDiv.innerHTML = `<h4>${day}</h4>`;
-          
-          times.forEach(time => {
-            const timeDiv = document.createElement('div');
-            timeDiv.className = 'time-option';
-            
-            const rb = document.createElement('input');
-            rb.type = 'radio';
-            rb.name = 'slot';
-            rb.value = `${day}|${time}`; // Store both day and time
-            
-            const timeSpan = document.createElement('span');
-            timeSpan.textContent = `⏰ ${time}`;
-            
-            timeDiv.appendChild(rb);
-            timeDiv.appendChild(timeSpan);
-            dayDiv.appendChild(timeDiv);
+      let slotCount = 0;
+      
+      // Sort dates for better display
+      const sortedDates = Object.keys(availabilityData).sort();
+      
+      sortedDates.forEach(date => {
+        const dayData = availabilityData[date];
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'day-card';
+        
+        // Format date for display
+        const displayDate = new Date(date).toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        });
+        
+        dayDiv.innerHTML = `<h4>${displayDate}</h4>`;
+        
+        if (dayData.type === 'all-day') {
+          // Generate time slots for all day (9 AM to 5 PM)
+          const timeSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];
+          timeSlots.forEach(time => {
+            if (slotCount < maxSlots) {
+              const timeDiv = document.createElement('div');
+              timeDiv.className = 'time-option';
+              
+              const rb = document.createElement('input');
+              rb.type = 'checkbox';
+              rb.name = 'slot';
+              rb.value = `${date}|${time}`;
+              rb.onchange = function() {
+                if (this.checked && slotCount >= maxSlots) {
+                  this.checked = false;
+                  alert(`You can only select up to ${maxSlots} time slots.`);
+                  return;
+                }
+                slotCount += this.checked ? 1 : -1;
+              };
+              
+              const timeSpan = document.createElement('span');
+              timeSpan.textContent = `⏰ ${time}`;
+              
+              timeDiv.appendChild(rb);
+              timeDiv.appendChild(timeSpan);
+              dayDiv.appendChild(timeDiv);
+            }
           });
-          
-          timesDiv.appendChild(dayDiv);
+        } else if (dayData.type === 'specific' && dayData.times && dayData.times.length > 0) {
+          dayData.times.forEach(time => {
+            if (slotCount < maxSlots) {
+              const timeDiv = document.createElement('div');
+              timeDiv.className = 'time-option';
+              
+              const rb = document.createElement('input');
+              rb.type = 'checkbox';
+              rb.name = 'slot';
+              rb.value = `${date}|${time}`;
+              rb.onchange = function() {
+                if (this.checked && slotCount >= maxSlots) {
+                  this.checked = false;
+                  alert(`You can only select up to ${maxSlots} time slots.`);
+                  return;
+                }
+                slotCount += this.checked ? 1 : -1;
+              };
+              
+              const timeSpan = document.createElement('span');
+              timeSpan.textContent = `⏰ ${time}`;
+              
+              timeDiv.appendChild(rb);
+              timeDiv.appendChild(timeSpan);
+              dayDiv.appendChild(timeDiv);
+            }
+          });
         }
+        
+        timesDiv.appendChild(dayDiv);
       });
     }
 
     function submitChoice() {
-      const sel = document.querySelector('input[name=slot]:checked');
-      if (!sel) return alert('Please pick a day and time.');
+      const selectedSlots = document.querySelectorAll('input[name=slot]:checked');
+      if (selectedSlots.length === 0) return alert('Please pick at least one time slot.');
       
-      // Parse the selected value (format: "day|time")
-      const [selectedDay, selectedTime] = sel.value.split('|');
+      const selectedTimes = [];
+      selectedSlots.forEach(slot => {
+        const [selectedDay, selectedTime] = slot.value.split('|');
+        selectedTimes.push({
+          date: selectedDay,
+          time: selectedTime
+        });
+      });
       
       google.script.run
         .withSuccessHandler(() => {
           document.body.innerHTML = `
             <div class="container">
               <div class="success-message">
-                <h3>✅ Confirmed!</h3>
-                <p>Your course is fixed for <strong>${selectedDay} at ${selectedTime}</strong></p>
+                <h3>✅ Time Slots Selected!</h3>
+                <p>You have selected ${selectedTimes.length} time slot(s):</p>
+                <ul style="text-align: left; margin: 20px 0;">
+                  ${selectedTimes.map(slot => 
+                    `<li><strong>${new Date(slot.date).toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })} at ${slot.time}</strong></li>`
+                  ).join('')}
+                </ul>
+                <p>Your preferences have been sent to the teacher for confirmation.</p>
               </div>
             </div>
           `;
         })
         .withFailureHandler(err => {
-          alert('Error confirming time: ' + err.message);
+          alert('Error submitting time slots: ' + err.message);
         })
-        .submitStudentConfirmation({
-          id:        meetingId,
-          finalTime: selectedDay + ' at ' + selectedTime
+        .submitStudentTimeSlots({
+          id: meetingId,
+          selectedTimes: selectedTimes
         });
     }
   </script>
